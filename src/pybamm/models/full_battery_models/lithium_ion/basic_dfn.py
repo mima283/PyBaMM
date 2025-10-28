@@ -131,14 +131,30 @@ class BasicDFN(BaseModel):
         c_s_surf_n = pybamm.surf(c_s_n)
         sto_surf_n = c_s_surf_n / self.param.n.prim.c_max
         j0_n = self.param.n.prim.j0(c_e_n, c_s_surf_n, T)
-        eta_n = phi_s_n - phi_e_n - self.param.n.prim.U(sto_surf_n, T)
+        
+
+
+        ###########################################################################################
+        omega = pybamm.Parameter("Negative electrode partial molar volume [m3.mol-1]")
+        sigma_h_surf = pybamm.Parameter("Hydrostatic stress [Pa]")  
+        eta_stress = omega / self.param.F * sigma_h_surf
+
+        # eta_n = phi_s_n - phi_e_n - self.param.n.prim.U(sto_surf_n, T) #orignal
+        eta_n = phi_s_n - phi_e_n - self.param.n.prim.U(sto_surf_n, T)- eta_stress # vpeljemo vpliv mehanike
+        ###########################################################################################
+
         Feta_RT_n = self.param.F * eta_n / (self.param.R * T)
         j_n = 2 * j0_n * pybamm.sinh(self.param.n.prim.ne / 2 * Feta_RT_n)
 
         c_s_surf_p = pybamm.surf(c_s_p)
         sto_surf_p = c_s_surf_p / self.param.p.prim.c_max
         j0_p = self.param.p.prim.j0(c_e_p, c_s_surf_p, T)
-        eta_p = phi_s_p - phi_e_p - self.param.p.prim.U(sto_surf_p, T)
+
+        ###########################################################################################
+        # eta_p = phi_s_p - phi_e_p - self.param.p.prim.U(sto_surf_p, T) # orignal
+        eta_p = phi_s_p - phi_e_p - self.param.p.prim.U(sto_surf_p, T) - eta_stress
+        #############################################################################################
+
         Feta_RT_p = self.param.F * eta_p / (self.param.R * T)
         j_s = pybamm.PrimaryBroadcast(0, "separator")
         j_p = 2 * j0_p * pybamm.sinh(self.param.p.prim.ne / 2 * Feta_RT_p)

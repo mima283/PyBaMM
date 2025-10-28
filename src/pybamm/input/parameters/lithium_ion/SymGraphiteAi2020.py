@@ -1,3 +1,5 @@
+# Parammeters for symmetric Ai2020 cell
+
 import os
 
 import numpy as np
@@ -219,16 +221,22 @@ def graphite_cracking_rate_Ai2020(T_dim):
     )
     arrhenius = np.exp(Eac_cr / pybamm.constants.R * (1 / T_dim - 1 / T_ref))
     return k_cr * arrhenius
+    
 
 
-def lico2_diffusivity_Dualfoil1998(sto, T):
+def lico2_diffusivity_Dualfoil1998(sto, T): # graphite diffusivity
     """
-    LiCo2 diffusivity as a function of stoichiometry, in this case the
-    diffusivity is taken to be a constant. The value is taken from Dualfoil [1].
+    Graphite diffusivity as a function of stoichiometry [1, 2, 3].
 
     References
     ----------
-    .. [1] John Newman, Dualfoil
+     .. [1] Ai, W., Kraft, L., Sturm, J., Jossen, A., & Wu, B. (2020).
+     Electrochemical Thermal-Mechanical Modelling of Stress Inhomogeneity in
+     Lithium-Ion Pouch Cells. Journal of The Electrochemical Society, 167(1), 013512
+      DOI: 10.1149/2.0122001JES.
+     .. [2] Rieger, B., Erhard, S. V., Rumpf, K., & Jossen, A. (2016).
+     A new method to model the thickness change of a commercial pouch cell
+     during discharge. Journal of The Electrochemical Society, 163(8), A1566-A1575.
 
     Parameters
     ----------
@@ -242,16 +250,16 @@ def lico2_diffusivity_Dualfoil1998(sto, T):
     :class:`pybamm.Symbol`
         Solid diffusivity [m2.s-1]
     """
-    D_ref = 5.387 * 10 ** (-15)
+    D_ref = 3.9 * 10 ** (-14)
     E_D_s = 5000
     T_ref = 298.15
     arrhenius = np.exp(E_D_s / pybamm.constants.R * (1 / T_ref - 1 / T))
     return D_ref * arrhenius
 
 
-def lico2_electrolyte_exchange_current_density_Dualfoil1998(c_e, c_s_surf, c_s_max, T):
+def lico2_electrolyte_exchange_current_density_Dualfoil1998(c_e, c_s_surf, c_s_max, T): # copied form graphite
     """
-    Exchange-current density for Butler-Volmer reactions between lico2 and LiPF6 in
+    Exchange-current density for Butler-Volmer reactions between graphite and LiPF6 in
     EC:DMC.
 
     References
@@ -274,9 +282,10 @@ def lico2_electrolyte_exchange_current_density_Dualfoil1998(c_e, c_s_surf, c_s_m
     :class:`pybamm.Symbol`
         Exchange-current density [A.m-2]
     """
-    m_ref = 1 * 10 ** (-11) * pybamm.constants.F  # need to match the unit from m/s
-    # (A/m2)(m3/mol)**1.5 - includes ref concentrations
-    E_r = 5000
+    m_ref = (
+        1 * 10 ** (-11) * pybamm.constants.F
+    )  # (A/m2)(m3/mol)**1.5 - includes ref concentrations
+    E_r = 5000  # activation energy for Temperature Dependent Reaction Constant [J/mol]
     arrhenius = np.exp(E_r / pybamm.constants.R * (1 / 298.15 - 1 / T))
 
     ##########################################################################
@@ -289,7 +298,7 @@ def lico2_electrolyte_exchange_current_density_Dualfoil1998(c_e, c_s_surf, c_s_m
     return m_ref * arrhenius * c_e**0.5 * c_s_surf**0.5 * (c_s_max - c_s_surf) ** 0.5
 
 
-def lico2_entropic_change_Ai2020_function(sto):
+def lico2_entropic_change_Ai2020_function(sto): # copied from graphite
     """
     Lithium Cobalt Oxide (LiCO2) entropic change in open-circuit potential (OCP) at
     a temperature of 298.15K as a function of the stoichiometry. The fit is taken
@@ -299,9 +308,9 @@ def lico2_entropic_change_Ai2020_function(sto):
     References
     ----------
     .. [1] Ai, W., Kraft, L., Sturm, J., Jossen, A., & Wu, B. (2020).
-    Electrochemical Thermal-Mechanical Modelling of Stress Inhomogeneity
-    in Lithium-Ion Pouch Cells. Journal of The Electrochemical Society,
-        167(1), 013512. DOI: 10.1149/2.0122001JES
+    Electrochemical Thermal-Mechanical Modelling of Stress Inhomogeneity in
+    Lithium-Ion Pouch Cells.
+    Journal of The Electrochemical Society, 167(1), 013512. DOI: 10.1149/2.0122001JES
 
     Parameters
     ----------
@@ -314,34 +323,38 @@ def lico2_entropic_change_Ai2020_function(sto):
         Entropic change [V.K-1]
     """
 
-    # Since the equation for LiCo2 from this ref. has the stretch factor,
-    # should this too? If not, the "bumps" in the OCV don't line up.
-    p1 = -3.20392657
-    p2 = 14.5719049
-    p3 = -27.9047599
-    p4 = 29.1744564
-    p5 = -17.992018
-    p6 = 6.54799331
-    p7 = -1.30382445
-    p8 = 0.109667298
-
     du_dT = (
-        p1 * sto**7
-        + p2 * sto**6
-        + p3 * sto**5
-        + p4 * sto**4
-        + p5 * sto**3
-        + p6 * sto**2
-        + p7 * sto
-        + p8
+        0.001
+        * (
+            0.005269056
+            + 3.299265709 * sto
+            - 91.79325798 * sto**2
+            + 1004.911008 * sto**3
+            - 5812.278127 * sto**4
+            + 19329.7549 * sto**5
+            - 37147.8947 * sto**6
+            + 38379.18127 * sto**7
+            - 16515.05308 * sto**8
+        )
+        / (
+            1
+            - 48.09287227 * sto
+            + 1017.234804 * sto**2
+            - 10481.80419 * sto**3
+            + 59431.3 * sto**4
+            - 195881.6488 * sto**5
+            + 374577.3152 * sto**6
+            - 385821.1607 * sto**7
+            + 165705.8597 * sto**8
+        )
     )
 
     return du_dT
 
 
-def lico2_volume_change_Ai2020(sto):
+def lico2_volume_change_Ai2020(sto): # copied from graphite
     """
-    lico2 particle volume change as a function of stoichiometry [1, 2].
+    Graphite particle volume change as a function of stoichiometry [1, 2].
 
     References
     ----------
@@ -358,21 +371,42 @@ def lico2_volume_change_Ai2020(sto):
     sto: :class:`pybamm.Symbol`
         Electrode stoichiometry, dimensionless
         should be R-averaged particle concentration
+    c_s_max : :class:`pybamm.Symbol`
+        Maximum particle concentration [mol.m-3]
 
     Returns
     -------
     t_change:class:`pybamm.Symbol`
         volume change, dimensionless, normalised by particle volume
     """
-    omega = pybamm.Parameter("Positive electrode partial molar volume [m3.mol-1]")
-    c_s_max = pybamm.Parameter("Maximum concentration in positive electrode [mol.m-3]")
-    t_change = omega * c_s_max * sto
+    p1 = 145.907
+    p2 = -681.229
+    p3 = 1334.442
+    p4 = -1415.710
+    p5 = 873.906
+    p6 = -312.528
+    p7 = 60.641
+    p8 = -5.706
+    p9 = 0.386
+    p10 = -4.966e-05
+    t_change = (
+        p1 * sto**9
+        + p2 * sto**8
+        + p3 * sto**7
+        + p4 * sto**6
+        + p5 * sto**5
+        + p6 * sto**4
+        + p7 * sto**3
+        + p8 * sto**2
+        + p9 * sto
+        + p10
+    )
     return t_change
 
 
-def lico2_cracking_rate_Ai2020(T_dim):
+def lico2_cracking_rate_Ai2020(T_dim): # copied from graphite
     """
-    lico2 particle cracking rate as a function of temperature [1, 2].
+    graphite particle cracking rate as a function of temperature [1, 2].
 
     References
     ----------
@@ -386,7 +420,7 @@ def lico2_cracking_rate_Ai2020(T_dim):
 
     Parameters
     ----------
-    T: :class:`pybamm.Symbol`
+    T_dim: :class:`pybamm.Symbol`
         temperature, [K]
 
     Returns
@@ -398,7 +432,7 @@ def lico2_cracking_rate_Ai2020(T_dim):
     k_cr = 3.9e-20
     T_ref = 298.15
     Eac_cr = pybamm.Parameter(
-        "Positive electrode activation energy for cracking rate [J.mol-1]"
+        "Negative electrode activation energy for cracking rate [J.mol-1]"
     )
     arrhenius = np.exp(Eac_cr / pybamm.constants.R * (1 / T_dim - 1 / T_ref))
     return k_cr * arrhenius

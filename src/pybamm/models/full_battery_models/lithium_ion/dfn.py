@@ -20,7 +20,7 @@ class DFN(BaseModel):
 
     """
 
-    def __init__(self, options=None, name="Doyle-Fuller-Newman model", build=True):
+    def __init__(self, options=None, name="Doyle-Fuller-Newman", build=True):
         # For degradation models we use the full form since this is a full-order model
         self.x_average = False
         super().__init__(options, name)

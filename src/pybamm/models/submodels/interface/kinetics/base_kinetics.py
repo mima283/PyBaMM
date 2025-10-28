@@ -119,9 +119,13 @@ class BaseKinetics(BaseInterface):
             elif delta_phi.domains["secondary"] == ["current collector"]:
                 ocp = ocp.orphans[0]
 
-        # Get reaction overpotential
-        eta_r = delta_phi - ocp
-
+        # Get reaction overpotential##########################################################################################################################
+        omega = pybamm.Parameter("Negative electrode partial molar volume [m3.mol-1]")
+        sigma_h_surf = pybamm.Parameter("Hydrostatic stress [Pa]")  
+        eta_stress = omega / self.param.F * sigma_h_surf
+        
+        eta_r = delta_phi - ocp - eta_stress # tukaj vpeljemo vpliv mehanike
+        ######################################################################################################################################################
         # Get average interfacial current density
         j_tot_av, a_j_tot_av = self._get_average_total_interfacial_current_density(
             variables

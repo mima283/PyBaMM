@@ -69,6 +69,7 @@ def plot_voltage_components(
         ]
     else:
         overpotentials = [
+            
             "Battery negative particle concentration overpotential [V]",
             "Battery positive particle concentration overpotential [V]",
             "X-averaged battery negative reaction overpotential [V]",
@@ -77,45 +78,52 @@ def plot_voltage_components(
             "X-averaged battery electrolyte ohmic losses [V]",
             "X-averaged battery negative solid phase ohmic losses [V]",
             "X-averaged battery positive solid phase ohmic losses [V]",
+            "Mechanical stress overpotential [V]",
         ]
         labels = [
-            "Negative particle concentration overpotential",
-            "Positive particle concentration overpotential",
-            "Negative reaction overpotential",
-            "Positive reaction overpotential",
-            "Electrolyte concentration overpotential",
-            "Ohmic electrolyte overpotential",
-            "Ohmic negative electrode overpotential",
-            "Ohmic positive electrode overpotential",
+            
+            "Difuzijske prenapetosti v anodi",
+            "Difuzijske prenapetosti v katodi",
+            "Reakcijske prenapetosti v anodi",
+            "Reakcijske prenapetosti v katodi",
+            "Transportne prenapetosti v elektrolitu",
+            "Ohmske prenapetosti v elektrolitu",
+            "Ohmske prenapetosti v anodi",
+            "Ohmske prenapetosti v katodi",
+            "Mehanske prenapetosti",
         ]
 
     # Plot
     # Initialise
+    Q_discharged = solution["Discharge capacity [A.h]"].entries
+    Q_max = Q_discharged[-1] 
+    DOD = (Q_discharged / Q_max)
+
     time = solution["Time [h]"].entries
     if split_by_electrode is False:
         ocv = solution["Battery open-circuit voltage [V]"]
-        initial_ocv = ocv(time[0])
+        initial_ocv = ocv(DOD[0])
         ocv = ocv.entries
         ax.fill_between(
-            time, ocv, initial_ocv, **kwargs_fill, label="Open-circuit voltage"
+            DOD, ocv, initial_ocv, **kwargs_fill, label="Open-circuit voltage"
         )
     else:
         ocp_n = solution["Battery negative electrode bulk open-circuit potential [V]"]
         ocp_p = solution["Battery positive electrode bulk open-circuit potential [V]"]
-        initial_ocp_n = ocp_n(time[0])
-        initial_ocp_p = ocp_p(time[0])
+        initial_ocp_n = ocp_n(DOD[0])
+        initial_ocp_p = ocp_p(DOD[0])
         initial_ocv = initial_ocp_p - initial_ocp_n
         delta_ocp_n = ocp_n.entries - initial_ocp_n
         delta_ocp_p = ocp_p.entries - initial_ocp_p
         ax.fill_between(
-            time,
+            DOD,
             initial_ocv - delta_ocp_n,
             initial_ocv,
             **kwargs_fill,
             label="Negative open-circuit potential",
         )
         ax.fill_between(
-            time,
+            DOD,
             initial_ocv - delta_ocp_n + delta_ocp_p,
             initial_ocv - delta_ocp_n,
             **kwargs_fill,
@@ -129,11 +137,14 @@ def plot_voltage_components(
         # so we have to multiply by -1 to show them correctly
         sgn = -1 if "negative" in overpotential else 1
         bottom = top + sgn * solution[overpotential].entries
-        ax.fill_between(time, bottom, top, **kwargs_fill, label=label)
+        if "Mechanical stress" in overpotential:
+            ax.fill_between(DOD, bottom, top, **kwargs_fill, label=label, color="salmon")
+        else:
+            ax.fill_between(DOD, bottom, top, **kwargs_fill, label=label)
         top = bottom
 
     V = solution["Battery voltage [V]"].entries
-    ax.plot(time, V, "k--", label="Voltage")
+    ax.plot(DOD, V, "k--", label="Voltage")
 
     if show_legend:
         leg = ax.legend(loc="center left", bbox_to_anchor=(1.05, 0.5), frameon=True)
@@ -142,14 +153,23 @@ def plot_voltage_components(
         fig.tight_layout()
 
     # Labels
-    ax.set_xlim([time[0], time[-1]])
-    ax.set_xlabel("Time [h]")
+    ax.set_xlim([DOD[0], DOD[-1]])
+    ax.set_xlabel("DOD [/]")
 
     y_min, y_max = (
         0.98 * min(np.nanmin(V), np.nanmin(ocv)),
         1.02 * (max(np.nanmax(V), np.nanmax(ocv))),
     )
     ax.set_ylim([y_min, y_max])
+
+    # plt.rcParams.update({
+    # 'font.size': 26,           # Osnovna velikost pisave
+    # 'axes.titlesize': 26,      # Velikost naslova grafa
+    # 'axes.labelsize': 26,      # Velikost pisave na osi
+    # 'xtick.labelsize': 24,     # Velikost številk na x osi
+    # 'ytick.labelsize': 24,     # Velikost številk na y osi
+    # 'legend.fontsize': 24,     # Velikost pisave v legendi
+    # })
 
     if show_plot:  # pragma: no cover
         plt.show()

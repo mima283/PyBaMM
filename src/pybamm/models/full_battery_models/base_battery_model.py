@@ -1443,8 +1443,13 @@ class BaseBatteryModel(pybamm.BaseModel):
 
         ocv_surf = ocp_surf_p_av - ocp_surf_n_av
         ocv_bulk = ocp_p_bulk - ocp_n_bulk
+        #######################################################################################
+        omega = pybamm.Parameter("Negative electrode partial molar volume [m3.mol-1]")
+        sigma_h_surf = pybamm.Parameter("Hydrostatic stress [Pa]")
+        eta_stress =   omega/self.param.F *sigma_h_surf
 
-        eta_particle = eta_particle_p - eta_particle_n
+        eta_particle = eta_particle_p - eta_particle_n # original
+        #######################################################################################
 
         # overpotentials
         if self.options.electrode_types["negative"] == "planar":
@@ -1458,8 +1463,9 @@ class BaseBatteryModel(pybamm.BaseModel):
         eta_r_p_av = self.variables[
             f"X-averaged positive electrode {phase_p}reaction overpotential [V]"
         ]
-        eta_r_av = eta_r_p_av - eta_r_n_av
 
+        eta_r_av = eta_r_p_av - eta_r_n_av  
+        
         delta_phi_s_n_av = self.variables[
             "X-averaged negative electrode ohmic losses [V]"
         ]
@@ -1492,12 +1498,19 @@ class BaseBatteryModel(pybamm.BaseModel):
                 "X-averaged reaction overpotential [V]": eta_r_av,
                 "X-averaged SEI film overpotential [V]": eta_sei_av,
                 "X-averaged solid phase ohmic losses [V]": delta_phi_s_av,
+                "Mechanical stress overpotential [V]": eta_stress,
             }
         )
-
+##################################################################################################
         # Battery-wide variables
-        V = self.variables["Voltage [V]"]
-        eta_e_av = self.variables["X-averaged electrolyte ohmic losses [V]"]
+        omega = pybamm.Parameter("Negative electrode partial molar volume [m3.mol-1]")
+        sigma_h_surf = pybamm.Parameter("Hydrostatic stress [Pa]")
+        
+        eta_stress =   omega/self.param.F *sigma_h_surf
+        eta_stress = pybamm.PrimaryBroadcast(eta_stress, "current collector")
+        V = self.variables["Voltage [V]"]-eta_stress
+        eta_e_av = self.variables["X-averaged electrolyte ohmic losses [V]"] - eta_stress # popravimo prenapetosti, da vključimo mehanske napetosti (ne vpliva na Voltage output)
+##################################################################################################
         eta_c_av = self.variables["X-averaged concentration overpotential [V]"]
         num_cells = pybamm.Parameter(
             "Number of cells connected in series to make a battery"
@@ -1530,6 +1543,8 @@ class BaseBatteryModel(pybamm.BaseModel):
                 "X-averaged battery concentration overpotential [V]": eta_c_av
                 * num_cells,
                 "Battery voltage [V]": V * num_cells,
+                "Voltage [V]": V * num_cells,
+                "echanical stress overpotential [V]": eta_stress * num_cells,
             }
         )
 

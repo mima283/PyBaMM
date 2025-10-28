@@ -69,7 +69,14 @@ class BaseOpenCircuitPotential(BaseInterface):
         # Particle overpotential is the difference between the average(U(c_surf)) and
         # U(c_bulk), i.e. the overpotential due to concentration gradients in the
         # particle
-        eta_particle = ocp_surf_av - ocp_bulk
+              
+        # Get reaction overpotential##########################################################################################################################
+        omega = pybamm.Parameter("Negative electrode partial molar volume [m3.mol-1]")
+        sigma_h_surf = pybamm.Parameter("Hydrostatic stress [Pa]")
+
+        eta_stress =   omega/self.param.F *sigma_h_surf
+        eta_particle = ocp_surf_av - ocp_bulk #+  eta_stress 
+        ######################################################################################################################################################
         variables.update(
             {
                 f"{Domain} electrode {reaction_name}"

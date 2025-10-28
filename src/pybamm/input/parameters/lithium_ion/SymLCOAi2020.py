@@ -5,19 +5,14 @@ import numpy as np
 import pybamm
 
 
-def graphite_diffusivity_Dualfoil1998(sto, T):
+def graphite_diffusivity_Dualfoil1998(sto, T): # copied from LiCo2
     """
-    Graphite diffusivity as a function of stoichiometry [1, 2, 3].
+    LiCo2 diffusivity as a function of stoichiometry, in this case the
+    diffusivity is taken to be a constant. The value is taken from Dualfoil [1].
 
     References
     ----------
-     .. [1] Ai, W., Kraft, L., Sturm, J., Jossen, A., & Wu, B. (2020).
-     Electrochemical Thermal-Mechanical Modelling of Stress Inhomogeneity in
-     Lithium-Ion Pouch Cells. Journal of The Electrochemical Society, 167(1), 013512
-      DOI: 10.1149/2.0122001JES.
-     .. [2] Rieger, B., Erhard, S. V., Rumpf, K., & Jossen, A. (2016).
-     A new method to model the thickness change of a commercial pouch cell
-     during discharge. Journal of The Electrochemical Society, 163(8), A1566-A1575.
+    .. [1] John Newman, Dualfoil
 
     Parameters
     ----------
@@ -31,7 +26,7 @@ def graphite_diffusivity_Dualfoil1998(sto, T):
     :class:`pybamm.Symbol`
         Solid diffusivity [m2.s-1]
     """
-    D_ref = 3.9 * 10 ** (-14)
+    D_ref = 5.387 * 10 ** (-15)
     E_D_s = 5000
     T_ref = 298.15
     arrhenius = np.exp(E_D_s / pybamm.constants.R * (1 / T_ref - 1 / T))
@@ -40,9 +35,9 @@ def graphite_diffusivity_Dualfoil1998(sto, T):
 
 def graphite_electrolyte_exchange_current_density_Dualfoil1998(
     c_e, c_s_surf, c_s_max, T
-):
+): # copied from LiCo2
     """
-    Exchange-current density for Butler-Volmer reactions between graphite and LiPF6 in
+    Exchange-current density for Butler-Volmer reactions between lico2 and LiPF6 in
     EC:DMC.
 
     References
@@ -65,10 +60,9 @@ def graphite_electrolyte_exchange_current_density_Dualfoil1998(
     :class:`pybamm.Symbol`
         Exchange-current density [A.m-2]
     """
-    m_ref = (
-        1 * 10 ** (-11) * pybamm.constants.F
-    )  # (A/m2)(m3/mol)**1.5 - includes ref concentrations
-    E_r = 5000  # activation energy for Temperature Dependent Reaction Constant [J/mol]
+    m_ref = 1 * 10 ** (-11) * pybamm.constants.F  # need to match the unit from m/s
+    # (A/m2)(m3/mol)**1.5 - includes ref concentrations
+    E_r = 5000
     arrhenius = np.exp(E_r / pybamm.constants.R * (1 / 298.15 - 1 / T))
 
     ##########################################################################
@@ -81,7 +75,7 @@ def graphite_electrolyte_exchange_current_density_Dualfoil1998(
     return m_ref * arrhenius * c_e**0.5 * c_s_surf**0.5 * (c_s_max - c_s_surf) ** 0.5
 
 
-def graphite_entropy_Enertech_Ai2020_function(sto):
+def graphite_entropy_Enertech_Ai2020_function(sto): # copied from LiCo2
     """
     Lithium Cobalt Oxide (LiCO2) entropic change in open-circuit potential (OCP) at
     a temperature of 298.15K as a function of the stoichiometry. The fit is taken
@@ -91,9 +85,9 @@ def graphite_entropy_Enertech_Ai2020_function(sto):
     References
     ----------
     .. [1] Ai, W., Kraft, L., Sturm, J., Jossen, A., & Wu, B. (2020).
-    Electrochemical Thermal-Mechanical Modelling of Stress Inhomogeneity in
-    Lithium-Ion Pouch Cells.
-    Journal of The Electrochemical Society, 167(1), 013512. DOI: 10.1149/2.0122001JES
+    Electrochemical Thermal-Mechanical Modelling of Stress Inhomogeneity
+    in Lithium-Ion Pouch Cells. Journal of The Electrochemical Society,
+        167(1), 013512. DOI: 10.1149/2.0122001JES
 
     Parameters
     ----------
@@ -106,38 +100,34 @@ def graphite_entropy_Enertech_Ai2020_function(sto):
         Entropic change [V.K-1]
     """
 
+    # Since the equation for LiCo2 from this ref. has the stretch factor,
+    # should this too? If not, the "bumps" in the OCV don't line up.
+    p1 = -3.20392657
+    p2 = 14.5719049
+    p3 = -27.9047599
+    p4 = 29.1744564
+    p5 = -17.992018
+    p6 = 6.54799331
+    p7 = -1.30382445
+    p8 = 0.109667298
+
     du_dT = (
-        0.001
-        * (
-            0.005269056
-            + 3.299265709 * sto
-            - 91.79325798 * sto**2
-            + 1004.911008 * sto**3
-            - 5812.278127 * sto**4
-            + 19329.7549 * sto**5
-            - 37147.8947 * sto**6
-            + 38379.18127 * sto**7
-            - 16515.05308 * sto**8
-        )
-        / (
-            1
-            - 48.09287227 * sto
-            + 1017.234804 * sto**2
-            - 10481.80419 * sto**3
-            + 59431.3 * sto**4
-            - 195881.6488 * sto**5
-            + 374577.3152 * sto**6
-            - 385821.1607 * sto**7
-            + 165705.8597 * sto**8
-        )
+        p1 * sto**7
+        + p2 * sto**6
+        + p3 * sto**5
+        + p4 * sto**4
+        + p5 * sto**3
+        + p6 * sto**2
+        + p7 * sto
+        + p8
     )
 
     return du_dT
 
 
-def graphite_volume_change_Ai2020(sto):
+def graphite_volume_change_Ai2020(sto): # copied from LiCo2
     """
-    Graphite particle volume change as a function of stoichiometry [1, 2].
+    lico2 particle volume change as a function of stoichiometry [1, 2].
 
     References
     ----------
@@ -154,42 +144,21 @@ def graphite_volume_change_Ai2020(sto):
     sto: :class:`pybamm.Symbol`
         Electrode stoichiometry, dimensionless
         should be R-averaged particle concentration
-    c_s_max : :class:`pybamm.Symbol`
-        Maximum particle concentration [mol.m-3]
 
     Returns
     -------
     t_change:class:`pybamm.Symbol`
         volume change, dimensionless, normalised by particle volume
     """
-    p1 = 145.907
-    p2 = -681.229
-    p3 = 1334.442
-    p4 = -1415.710
-    p5 = 873.906
-    p6 = -312.528
-    p7 = 60.641
-    p8 = -5.706
-    p9 = 0.386
-    p10 = -4.966e-05
-    t_change = (
-        p1 * sto**9
-        + p2 * sto**8
-        + p3 * sto**7
-        + p4 * sto**6
-        + p5 * sto**5
-        + p6 * sto**4
-        + p7 * sto**3
-        + p8 * sto**2
-        + p9 * sto
-        + p10
-    )
+    omega = pybamm.Parameter("Positive electrode partial molar volume [m3.mol-1]")
+    c_s_max = pybamm.Parameter("Maximum concentration in positive electrode [mol.m-3]")
+    t_change = omega * c_s_max * sto
     return t_change
 
 
-def graphite_cracking_rate_Ai2020(T_dim):
+def graphite_cracking_rate_Ai2020(T_dim): # copied from LiCo2
     """
-    graphite particle cracking rate as a function of temperature [1, 2].
+    lico2 particle cracking rate as a function of temperature [1, 2].
 
     References
     ----------
@@ -203,7 +172,7 @@ def graphite_cracking_rate_Ai2020(T_dim):
 
     Parameters
     ----------
-    T_dim: :class:`pybamm.Symbol`
+    T: :class:`pybamm.Symbol`
         temperature, [K]
 
     Returns
@@ -215,7 +184,7 @@ def graphite_cracking_rate_Ai2020(T_dim):
     k_cr = 3.9e-20
     T_ref = 298.15
     Eac_cr = pybamm.Parameter(
-        "Negative electrode activation energy for cracking rate [J.mol-1]"
+        "Positive electrode activation energy for cracking rate [J.mol-1]"
     )
     arrhenius = np.exp(Eac_cr / pybamm.constants.R * (1 / T_dim - 1 / T_ref))
     return k_cr * arrhenius
@@ -568,8 +537,8 @@ def get_parameter_values():
         "Negative electrode reaction-driven LAM factor [m3.mol-1]": 0.0,
         "Positive electrode reaction-driven LAM factor [m3.mol-1]": 0.0,
         # cell
-        "Negative current collector thickness [m]": 1e-05,
-        "Negative electrode thickness [m]": 7.65e-05,
+        "Negative current collector thickness [m]": 1.5e-05,
+        "Negative electrode thickness [m]": 6.8e-05,
         "Separator thickness [m]": 2.5e-05,
         "Positive electrode thickness [m]": 6.8e-05,
         "Positive current collector thickness [m]": 1.5e-05,
@@ -579,52 +548,52 @@ def get_parameter_values():
         "Cell volume [m3]": 1.5341e-05,
         "Cell emissivity": 0.95,
         "Cell thermal expansion coefficient [m.K-1]": 1.1e-06,
-        "Negative current collector conductivity [S.m-1]": 58411000.0,
+        "Negative current collector conductivity [S.m-1]": 36914000.0,
         "Positive current collector conductivity [S.m-1]": 36914000.0,
-        "Negative current collector density [kg.m-3]": 8960.0,
+        "Negative current collector density [kg.m-3]": 2700.0,
         "Positive current collector density [kg.m-3]": 2700.0,
-        "Negative current collector specific heat capacity [J.kg-1.K-1]": 385.0,
+        "Negative current collector specific heat capacity [J.kg-1.K-1]": 897.0,
         "Positive current collector specific heat capacity [J.kg-1.K-1]": 897.0,
-        "Negative current collector thermal conductivity [W.m-1.K-1]": 401.0,
+        "Negative current collector thermal conductivity [W.m-1.K-1]": 237.0,
         "Positive current collector thermal conductivity [W.m-1.K-1]": 237.0,
         "Nominal cell capacity [A.h]": 2.28,
         "Current function [A]": 2.28,
         "Contact resistance [Ohm]": 0,
         # negative electrode
-        "Negative electrode conductivity [S.m-1]": 100.0,
-        "Maximum concentration in negative electrode [mol.m-3]": 28700.0,
-        "Negative particle diffusivity [m2.s-1]": graphite_diffusivity_Dualfoil1998,
-        "Negative electrode OCP [V]": graphite_ocp_Enertech_Ai2020,
-        "Negative electrode porosity": 0.33,
-        "Negative electrode active material volume fraction": 0.61,
-        "Negative particle radius [m]": 5e-06,
-        "Negative electrode Bruggeman coefficient (electrolyte)": 2.914,
+        "Negative electrode conductivity [S.m-1]": 10.0,
+        "Maximum concentration in negative electrode [mol.m-3]": 49943.0,
+        "Negative particle diffusivity [m2.s-1]": lico2_diffusivity_Dualfoil1998,
+        "Negative electrode OCP [V]": lico2_ocp_Ai2020,
+        "Negative electrode porosity": 0.32,
+        "Negative electrode active material volume fraction": 0.62,
+        "Negative particle radius [m]": 3e-06,
+        "Negative electrode Bruggeman coefficient (electrolyte)": 1.83,
         "Negative electrode Bruggeman coefficient (electrode)": 0.0,
         "Negative electrode charge transfer coefficient": 0.5,
         "Negative electrode double-layer capacity [F.m-2]": 0.2,
         "Negative electrode exchange-current density [A.m-2]"
-        "": graphite_electrolyte_exchange_current_density_Dualfoil1998,
+        "": lico2_electrolyte_exchange_current_density_Dualfoil1998,
         "Negative electrode density [kg.m-3]": 2470.0,
         "Negative electrode specific heat capacity [J.kg-1.K-1]": 1080.2,
-        "Negative electrode thermal conductivity [W.m-1.K-1]": 1.04,
+        "Negative electrode thermal conductivity [W.m-1.K-1]": 1.58,
         "Negative electrode OCP entropic change [V.K-1]"
-        "": graphite_entropy_Enertech_Ai2020_function,
-        "Negative electrode Poisson's ratio": 0.3,
-        "Negative electrode Young's modulus [Pa]": 15000000000.0,
+        "": lico2_entropic_change_Ai2020_function,
+        "Negative electrode Poisson's ratio": 0.2,
+        "Negative electrode Young's modulus [Pa]": 375000000000.0,
         "Negative electrode reference concentration for free of deformation [mol.m-3]"
         "": 0.0,
-        "Negative electrode partial molar volume [m3.mol-1]": 3.1e-06,
-        "Negative electrode volume change": graphite_volume_change_Ai2020,
+        "Negative electrode partial molar volume [m3.mol-1]": -7.28e-07,
+        "Negative electrode volume change": lico2_volume_change_Ai2020,
         "Negative electrode initial crack length [m]": 2e-08,
         "Negative electrode initial crack width [m]": 1.5e-08,
         "Negative electrode number of cracks per unit area [m-2]": 3180000000000000.0,
         "Negative electrode Paris' law constant b": 1.12,
         "Negative electrode Paris' law constant m": 2.2,
-        "Negative electrode cracking rate": graphite_cracking_rate_Ai2020,
+        "Negative electrode cracking rate": lico2_cracking_rate_Ai2020,
         "Negative electrode activation energy for cracking rate [J.mol-1]": 0.0,
-        "Negative electrode LAM constant proportional term [s-1]": 0.0,
+        "Negative electrode LAM constant proportional term [s-1]": 2.78e-13,
         "Negative electrode LAM constant exponential term": 2.0,
-        "Negative electrode critical stress [Pa]": 60000000.0,
+        "Negative electrode critical stress [Pa]": 375000000.0,
         # positive electrode
         "Positive electrode conductivity [S.m-1]": 10.0,
         "Maximum concentration in positive electrode [mol.m-3]": 49943.0,

@@ -34,7 +34,11 @@ class SymmetricButlerVolmer(BaseKinetics):
 
     def _get_kinetics(self, j0, ne, eta_r, T, u):
         Feta_RT = self.param.F * eta_r / (self.param.R * T)
-        return 2 * u * j0 * pybamm.sinh(ne * 0.5 * Feta_RT)
+        return 2 * u * j0 * pybamm.sinh(ne * 0.5 * Feta_RT) # original
+    
+    #########################################################################
+        # return 2 * u * j0/2 * pybamm.sinh(ne * 0.5 * Feta_RT)
+    #########################################################################
 
 
 class AsymmetricButlerVolmer(BaseKinetics):
@@ -62,6 +66,20 @@ class AsymmetricButlerVolmer(BaseKinetics):
     def _get_kinetics(self, j0, ne, eta_r, T, u):
         alpha = self.phase_param.alpha_bv
         Feta_RT = self.param.F * eta_r / (self.param.R * T)
-        arg_ox = ne * alpha * Feta_RT
-        arg_red = -ne * (1 - alpha) * Feta_RT
+        arg_ox = ne * alpha * Feta_RT # original
+        arg_red = -ne * (1 - alpha) * Feta_RT # original
+
+        #################################################################
+        # omega = pybamm.Parameter("Negative electrode partial molar volume [m3.mol-1]")
+        # sigma_h_surf = pybamm.Parameter("Hydrostatic stress [Pa]")  
+        # eta_stress = omega / self.param.F * sigma_h_surf
+
+        # eta_r2 = eta_r + eta_stress # izničimo vpliv mehanike
+
+        # Feta_RT2 = self.param.F * eta_r2 / (self.param.R * T) # brez vpliva mehanike
+
+        # arg_ox = ne * alpha * Feta_RT
+        # arg_red = -ne * (1 - alpha) * Feta_RT2 # brez vpliva mehanike
+        #################################################################
+
         return u * j0 * (pybamm.exp(arg_ox) - pybamm.exp(arg_red))
