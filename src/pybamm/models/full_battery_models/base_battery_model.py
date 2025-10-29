@@ -1509,7 +1509,8 @@ class BaseBatteryModel(pybamm.BaseModel):
         eta_stress =   omega/self.param.F *sigma_h_surf
         eta_stress = pybamm.PrimaryBroadcast(eta_stress, "current collector")
         V = self.variables["Voltage [V]"]-eta_stress
-        eta_e_av = self.variables["X-averaged electrolyte ohmic losses [V]"] - eta_stress # popravimo prenapetosti, da vključimo mehanske napetosti (ne vpliva na Voltage output)
+        eta_e_av = self.variables["X-averaged electrolyte ohmic losses [V]"] - eta_stress # popravimo prenapetosti, da vključimo mehanske napetosti 
+                                                                                          # (ne vpliva na Voltage output)
 ##################################################################################################
         eta_c_av = self.variables["X-averaged concentration overpotential [V]"]
         num_cells = pybamm.Parameter(
