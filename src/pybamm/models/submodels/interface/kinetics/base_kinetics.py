@@ -120,7 +120,7 @@ class BaseKinetics(BaseInterface):
                 ocp = ocp.orphans[0]
 
         # Get reaction overpotential##########################################################################################################################
-        omega = pybamm.Parameter("Negative electrode partial molar volume [m3.mol-1]")
+        omega = pybamm.Parameter(f"{Domain} electrode partial molar volume [m3.mol-1]")
         sigma_h_surf = pybamm.Parameter("Hydrostatic stress [Pa]")  
         eta_stress = omega / self.param.F * sigma_h_surf
         

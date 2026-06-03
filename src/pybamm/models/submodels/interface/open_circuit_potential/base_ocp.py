@@ -71,11 +71,11 @@ class BaseOpenCircuitPotential(BaseInterface):
         # particle
               
         # Get reaction overpotential##########################################################################################################################
-        omega = pybamm.Parameter("Negative electrode partial molar volume [m3.mol-1]")
+        omega = pybamm.Parameter(f"{Domain} electrode partial molar volume [m3.mol-1]")
         sigma_h_surf = pybamm.Parameter("Hydrostatic stress [Pa]")
 
         eta_stress =   omega/self.param.F *sigma_h_surf
-        eta_particle = ocp_surf_av - ocp_bulk #+  eta_stress 
+        eta_particle = ocp_surf_av - ocp_bulk -  eta_stress 
         ######################################################################################################################################################
         variables.update(
             {
