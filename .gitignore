@@ -9,6 +9,9 @@
 *.csv
 *.hidden
 *.pkl
+*.npy
+*.xlsx
+*.eps
 
 # don't ignore important .txt and .csv files
 !requirements*
